@@ -1,0 +1,115 @@
+import random
+import re
+
+def isPrime(n):
+    if n < 2 or n == 2 or n == 3:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+def extendedGcd(a, b):
+    if a == 0:
+        return b, 0, 1
+    else:
+        g, x, y = extendedGcd(b % a, a)
+        return g, y - (b // a) * x, x
+
+def modInverse(a, m):
+    if m == 1:
+        return 0
+    m0, x0, x1 = m, 0, 1
+    while a > 1:
+        q = a // m
+        m, a = a % m, m
+        x0, x1 = x1 - q * x0, x0
+    return x1 + m0 if x1 < 0 else x1
+
+def generatePrime():
+    while True:
+        value = random.randint(2 ** 15, 2 ** 16)
+        if isPrime(value):
+            return value
+
+def generateKey():
+    p, q = generatePrime(), generatePrime()
+    N, phiN = p * q, (p - 1) * (q - 1)
+    while True:
+        e = random.randrange(2, phiN)
+        if extendedGcd(e, phiN)[0] == 1:
+            d = modInverse(e, phiN)
+            break
+    return p, q, N, phiN, e
+
+p, q, N, phiN, e = generateKey()
+print("p: ", p)
+print("q: ", q)
+print("N: ", N)
+print("phiN: ", phiN)
+print("e: ", e)
+
+
+#My values
+N = 3957207679
+e = 1447159027
+phiN = 3957081840
+
+def calculatePrivateKey(phiN, e):
+    d, mainY, temphiN = 0, 1, phiN
+    while e > 0:
+        quotient = temphiN // e
+        remainder = temphiN - (quotient * e)
+        temphiN, e = e, remainder
+        y = d - quotient * mainY
+        d, mainY = mainY, y
+        if e == 1:
+            break
+    if mainY < 0:
+      mainY = mainY % phiN
+
+    return mainY
+
+d = calculatePrivateKey(phiN, e)
+print("d: ", d)
+
+def squareAndMultiply(base, exponent, mod):
+    result = 1
+    while exponent > 0:
+        if exponent % 2 == 1:
+            result = (result * base) % mod
+        base = (base * base) % mod
+        exponent //= 2
+    return result
+
+
+def encrypt(N, e, message):
+    pattern = '...?'
+    chunks = re.findall(pattern, message)
+    hexIntegers = []
+    for chunk in chunks:
+        hexEncoded = chunk.encode('utf-8').hex()
+        hexInteger = int(hexEncoded, 16)
+        hexIntegers.append(hexInteger)
+    cipher = list(map(lambda c: squareAndMultiply(c, e, N), hexIntegers))
+    return cipher
+
+def decrypt(N, d, cipher):
+    integers = list(map(lambda part: squareAndMultiply(int(part), d, N), cipher))
+    hexa = [hex(j)[2:] for j in integers]
+    message = ''.join([bytes.fromhex(k).decode('ascii') for k in hexa])
+    return message
+
+message = "Hello Canada"
+cipherText = encrypt(1912407547, 40487, "Hello Canada") #partnerN, partnerE, myMessage
+print("Encrypted Message: ", cipherText)
+
+decryptedMessage = decrypt(3957207679, 2695744123, [102064327, 3656561072, 2176567642, 3632585730]) #myN, myD, partnerMessage
+print("Decrypted Message: ", decryptedMessage)
+
+mySignature = encrypt(3957207679, 2695744123, "Nadia Haque Zumme") #myN, myD, mySignature
+print("My Signature: ", mySignature)
+
+partnerSignature = decrypt(1912407547, 40487, [1272730468, 799229987, 1032954247, 870341909, 12797822]) # partnerN, partnerE, partnerHash
+print("Partner Signature: ", partnerSignature)
+
