@@ -1,2 +1,2 @@
 # Encrypt-Decrypt-a-Message
-It's a project of my INSE6110 course which is about encrypt my message and decrypt my project partner's message with signature. I use Python programming to solve make this project
+It's a course project which is about encrypting my message and decrypting my project partner's message with a signature. I use Python programming to make this project
